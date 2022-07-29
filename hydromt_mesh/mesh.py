@@ -14,18 +14,21 @@ import hydromt
 from hydromt.models.model_api import Model
 from hydromt import gis_utils, io
 
+from . import meshclasses
+
 logger = logging.getLogger(__name__)
 
 
-class PluginModel(Model):
-    """General and basic API for models in HydroMT"""
+class MeshModel(Model):
+    """This is the class for MESH models in HydroMT"""
 
     # FIXME
-    _NAME = "plugin"
-    _CONF = "testmodel.ini"
-    _GEOMS = {"gauges": "obs"}
-    _MAPS = {"elevtn": "dem"}
-    _FOLDERS = []
+    _NAME = "mesh"
+    _CONF = "meshmodel.ini"
+    _DATADIR = {}
+    _GEOMS = {"geom": "subbasins"}
+    _MAPS = {}
+    _FOLDERS = ["output"]
 
     def __init__(
         self,
@@ -48,11 +51,12 @@ class PluginModel(Model):
     ## components
 
     def setup_basemaps(self, region, res=1000, crs="utm", basemaps_fn="merit_hydro"):
-        """Define model region and setup dem model layers.
+        """BOILERPLATE FUNCTION Define model region and geometries.
 
         Adds model layers:
 
         * **dem** map: elevation [m+ref]
+        * **basins** geom: basins or HRU shape vector
 
         Parameters
         ----------
@@ -98,9 +102,30 @@ class PluginModel(Model):
         da_elv = da_elv_proj.raster.clip_geom(dst_geom, align=res)
         # set elevation map
         self.set_staticmaps(da_elv, self._MAPS["elevtn"])
+    
+    def setup_basins(self, basins_fn, **kwargs):
+        """Setup model basin geometries
+
+        Adds model layers:
+
+        * **basins** geom: basin geometries
+
+        Parameters
+        ----------
+        basins_fn: str
+            Path to basin geometry file.
+            See :py:meth:`~hydromt.open_vector`, for accepted files.
+        """
+        name = self._GEOMS["geom"]     
+        gdf = self.data_catalog.get_geodataframe(
+            basins_fn, geom=self.region, **kwargs
+            ).to_crs(self.crs)
+        self.set_staticgeoms(gdf,name)
+        self.logger.info(f"{name} set based on {basins_fn}")
+
 
     def setup_gauges(self, gauges_fn=None, **kwargs):
-        """Setup model observation point locations.
+        """BOILERPLATE FUNCTION Setup model observation point locations.
 
         Adds model layers:
 
@@ -122,7 +147,7 @@ class PluginModel(Model):
             self.set_config(f"{name}.{name}", f"{name}.xy")
             self.logger.info(f"{name} set based on {gauges_fn}")
 
-    ## I/O
+    ## I/O 
 
     def read(self):
         """Method to read the complete model schematization and configuration from file."""
@@ -145,7 +170,7 @@ class PluginModel(Model):
         if self._staticgeoms:
             self.write_staticgeoms()
         if self._forcing:
-            self.write_staticgeoms()
+            self.write_forcing()
 
     def read_staticmaps(self):
         """Read staticmaps at <root/?/> and parse to xarray Dataset"""
