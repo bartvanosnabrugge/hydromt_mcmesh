@@ -1,4 +1,4 @@
-hydroMT-plugin: plugin plugin for hydroMT
+hydroMT-plugin: plugin for hydroMT
 ###########################################
 
 FIXME add badges with correct links
