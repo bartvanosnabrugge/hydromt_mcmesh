@@ -1,4 +1,4 @@
-name: hydromt-plugin
+name: hydromt-mcmesh
 
 channels:
   - conda-forge
