@@ -14,7 +14,7 @@ import hydromt
 from hydromt.models.model_api import Model
 from hydromt import gis_utils, io
 
-from . import meshclasses
+from . import meshclasses as mcl
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ class MeshModel(Model):
     _GEOMS = {"geom": "subbasins"}
     _MAPS = {}
     _FOLDERS = ["output"]
+    _MODELFILES = []
+
 
     def __init__(
         self,
@@ -122,6 +124,14 @@ class MeshModel(Model):
             ).to_crs(self.crs)
         self.set_staticgeoms(gdf,name)
         self.logger.info(f"{name} set based on {basins_fn}")
+
+    def setup_drainage_db():
+        # create mesh topology
+        mcl.generate_mesh_topology(control_options['river_network_shp_path'], 
+            control_options['river_basin_shp_path'],
+            drain_db_path,
+            control_options['settings_make_outlet'])
+        ranks, drain_db = mcl.reindex_topology_file(drain_db_path)
 
 
     def setup_gauges(self, gauges_fn=None, **kwargs):
